@@ -18,8 +18,6 @@
 			return;
 		}
 
-		e.preventDefault();
-
 		var wheelDeltaX, wheelDeltaY,
 			newX, newY,
 			that = this;
@@ -95,6 +93,11 @@
 			newX = 0;
 		} else if ( newX < this.maxScrollX ) {
 			newX = this.maxScrollX;
+		}
+
+		var isOutOfBounds = newY <= 0 && newY >= this.maxScrollY;
+		if (!this.options.preventDefaultWithinBoundsOnly || isOutOfBounds) {
+			e.preventDefault();
 		}
 
 		if ( newY > 0 ) {

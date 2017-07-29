@@ -314,6 +314,7 @@ var utils = (function () {
 
 	return me;
 })();
+
 function IScroll (el, options) {
 	this.wrapper = typeof el == 'string' ? document.querySelector(el) : el;
 	this.scroller = this.wrapper.children[0];
@@ -342,6 +343,7 @@ function IScroll (el, options) {
 		bounceEasing: '',
 
 		preventDefault: true,
+        preventDefaultWithinBoundsOnly: false,
 		preventDefaultException: { tagName: /^(INPUT|TEXTAREA|BUTTON|SELECT)$/ },
 
 		HWCompositing: true,
@@ -481,7 +483,7 @@ IScroll.prototype = {
 			return;
 		}
 
-		if ( this.options.preventDefault && !utils.isBadAndroid && !utils.preventDefaultException(e.target, this.options.preventDefaultException) ) {
+		if ( this.options.preventDefault && !this.options.preventDefaultWithinBoundsOnly && !utils.isBadAndroid && !utils.preventDefaultException(e.target, this.options.preventDefaultException) ) {
 			e.preventDefault();
 		}
 
@@ -524,9 +526,9 @@ IScroll.prototype = {
 			return;
 		}
 
-		if ( this.options.preventDefault ) {	// increases performance on Android? TODO: check!
-			e.preventDefault();
-		}
+        if ( this.options.preventDefault && !this.options.preventDefaultWithinBoundsOnly ) {	// increases performance on Android? TODO: check!
+            e.preventDefault();
+        }
 
 		var point		= e.touches ? e.touches[0] : e,
 			deltaX		= point.pageX - this.pointX,
@@ -589,6 +591,12 @@ IScroll.prototype = {
 		if ( newX > 0 || newX < this.maxScrollX ) {
 			newX = this.options.bounce ? this.x + deltaX / 3 : newX > 0 ? 0 : this.maxScrollX;
 		}
+
+		var isOutOfBounds = newY <= 0 && newY >= this.maxScrollY;
+		if (this.options.preventDefaultWithinBoundsOnly && isOutOfBounds) {
+			e.preventDefault();
+		}
+
 		if ( newY > 0 || newY < this.maxScrollY ) {
 			newY = this.options.bounce ? this.y + deltaY / 3 : newY > 0 ? 0 : this.maxScrollY;
 		}
@@ -1041,6 +1049,7 @@ IScroll.prototype = {
 
 		return { x: x, y: y };
 	},
+
 	_initIndicators: function () {
 		var interactive = this.options.interactiveScrollbars,
 			customStyle = typeof this.options.scrollbars != 'string',
@@ -1166,8 +1175,6 @@ IScroll.prototype = {
 			return;
 		}
 
-		e.preventDefault();
-
 		var wheelDeltaX, wheelDeltaY,
 			newX, newY,
 			that = this;
@@ -1243,6 +1250,11 @@ IScroll.prototype = {
 			newX = 0;
 		} else if ( newX < this.maxScrollX ) {
 			newX = this.maxScrollX;
+		}
+
+		var isOutOfBounds = newY <= 0 && newY >= this.maxScrollY;
+		if (!this.options.preventDefaultWithinBoundsOnly || isOutOfBounds) {
+			e.preventDefault();
 		}
 
 		if ( newY > 0 ) {
